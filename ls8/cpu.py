@@ -10,10 +10,14 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+        self.sp = 7
+        self.running = False
         self.LDI = 0b10000010
         self.PRN = 0b01000111
         self.HLT = 0b00000001
         self.MUL = 0b10100010
+        self.POP = 0b01000110
+        self.PUSH = 0b01000101
 
     def load(self, program):
         """Load a program into memory."""
@@ -78,24 +82,43 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
+        branch_table = {
+            self.LDI : self.ldi,
+            self.PRN : self.prn,
+            self.MUL : self.mult,
+            self.HLT : self.hlt,
+            self.PUSH : self.push,
+            self.POP : self.pop
+        }
+        self.reg[self.sp] = 0xF4
         
-        running = True
-        while running:
+        self.running = True
+        while self.running:
+            # ir is the value in ram at the index of pc
             ir = self.ram[self.pc]
-
-            if ir == self.LDI:
-                self.ldi()
-
-            elif ir == self.PRN:
-                self.prn()
-
-            elif ir == self.HLT:
-                running = self.hlt()
-            elif ir == self.MUL:
-                running = self.mult()
-            else:
-                print(f"unknown instruction {ir} at address {self.pc}")
+            # check if the value is in our hash table
+            if ir in branch_table:
+            
+                branch_table[ir]()
+            elif ir not in branch_table:
+                print(f"Unknown instruction {ir} at address {self.pc}")
                 sys.exit(1)
+        # while self.running:
+        #     ir = self.ram[self.pc]
+
+        #     if ir == self.LDI:
+        #         self.ldi()
+
+        #     elif ir == self.PRN:
+        #         self.prn()
+
+        #     elif ir == self.HLT:
+        #         running = self.hlt()
+        #     elif ir == self.MUL:
+        #         running = self.mult()
+        #     else:
+        #         print(f"unknown instruction {ir} at address {self.pc}")
+        #         sys.exit(1)
 
 
     def ldi(self):
@@ -108,11 +131,14 @@ class CPU:
         address = self.ram[self.pc + 1]
         value = self.reg[address]
         print(value)
+        # print(self.ram)
+        # print(self.reg)
+        print("address", address)
         self.pc += 2
 
     def hlt(self):
         self.pc += 1
-        return False
+        self.running = False
 
     def mult(self):
         # a = self.ram[self.pc + 1]
@@ -121,3 +147,31 @@ class CPU:
         print(f'RAM: {self.ram}')
         print(f'Reg: {self.reg}')
         self.pc += 3
+
+    def mod(self):
+        self.alu("MOD", 0, 1)
+
+    def push(self):
+        #self.reg[7] = 104 
+        self.reg[self.sp] -= 1
+
+        address = self.ram[self.pc + 1]
+        value = self.reg[address]
+
+        top_loc = self.reg[self.sp]
+        self.ram[top_loc] = value
+        print("PC", self.pc)
+
+        self.pc += 2
+
+    def pop(self):
+        #take value from ram
+        top_stack_val = self.reg[self.sp]
+        # lets get the register address
+        reg_addr = self.ram[self.pc + 1]
+        # overwrite our reg address with the value of our memory address we are looking at
+        self.reg[reg_addr] = self.ram[top_stack_val]
+        self.reg[self.sp] += 1
+        self.pc += 2
+        
+        
