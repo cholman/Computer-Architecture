@@ -11,17 +11,22 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.sp = 7
+        self.fl = 0b00000000
         self.return_pc = 0
         self.running = False
         self.LDI = 0b10000010
         self.PRN = 0b01000111
         self.HLT = 0b00000001
+
         self.MUL = 0b10100010
         self.ADD = 0b10100000
+
         self.POP = 0b01000110
         self.PUSH = 0b01000101
+
         self.CALL = 0b01010000
         self.RET = 0b00010001
+
         self.CMP = 0b10100111
         self.JEQ = 0b01010101
         self.JNE = 0b01010110
@@ -51,7 +56,12 @@ class CPU:
             #write to reg_a
             self.reg[reg_a] *= self.reg[reg_b]
         elif op == "CMP":
-            pass
+            if self.reg[reg_a] > self.reg[reg_b]:
+                self.fl = 0b00000010
+            elif self.reg[reg_a] == self.reg[reg_b]:
+                self.fl = 0b00000001
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.fl = 0b00000100
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -102,7 +112,7 @@ class CPU:
             self.POP : self.pop,
             self.CALL : self.call,
             self.RET : self.ret,
-            self.CMP : self.cmp,
+            self.CMP : self.comp,
             self.JEQ : self.jeq,
             self.JNE : self.jne,
             self.JMP : self.jmp
@@ -150,7 +160,7 @@ class CPU:
         print(value)
         # print(self.ram)
         # print(self.reg)
-        print("address", address)
+        #print("address", address)
         self.pc += 2
 
     def hlt(self):
@@ -202,7 +212,7 @@ class CPU:
 
         top_loc = self.reg[self.sp]
         self.ram[top_loc] = value
-        print("PC", self.pc)
+        #print("PC", self.pc)
 
         self.pc += 2
 
@@ -215,17 +225,32 @@ class CPU:
         self.reg[reg_addr] = self.ram[top_stack_val]
         self.reg[self.sp] += 1
         self.pc += 2
-
-    def cmp(self):
-        pass
+    # L G E
+    def comp(self):
+        self.alu("CMP", 0, 1)
+        self.pc += 3
 
     def jeq(self):
-        pass
+        flag = str(self.fl)[-1]
+        address = self.ram[self.pc + 1]
+        print(f"Jeq Flag: {flag}")
+        if int(flag) == 1:
+            self.pc = self.reg[address]
+        else:
+            self.pc += 2
 
     def jne(self):
-        pass
+        #print("JNE")
+        flag = str(self.fl)[-1]
+        address = self.ram[self.pc + 1]
+        print(f"JNE Flag: {flag}")
+        if int(flag) != 1:
+            self.pc = self.reg[address]
+        else:
+            self.pc += 2
 
     def jmp(self):
-        pass
+        address = self.ram[self.pc + 1]
+        self.pc = self.reg[address]
         
-        
+    #subroutine(call return), binary vs hex, bitwise operation
