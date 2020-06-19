@@ -11,13 +11,21 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.sp = 7
+        self.return_pc = 0
         self.running = False
         self.LDI = 0b10000010
         self.PRN = 0b01000111
         self.HLT = 0b00000001
         self.MUL = 0b10100010
+        self.ADD = 0b10100000
         self.POP = 0b01000110
         self.PUSH = 0b01000101
+        self.CALL = 0b01010000
+        self.RET = 0b00010001
+        self.CMP = 0b10100111
+        self.JEQ = 0b01010101
+        self.JNE = 0b01010110
+        self.JMP = 0b01010100
 
     def load(self, program):
         """Load a program into memory."""
@@ -42,6 +50,8 @@ class CPU:
             #accept instruction
             #write to reg_a
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "CMP":
+            pass
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -86,9 +96,16 @@ class CPU:
             self.LDI : self.ldi,
             self.PRN : self.prn,
             self.MUL : self.mult,
+            self.ADD : self.add,
             self.HLT : self.hlt,
             self.PUSH : self.push,
-            self.POP : self.pop
+            self.POP : self.pop,
+            self.CALL : self.call,
+            self.RET : self.ret,
+            self.CMP : self.cmp,
+            self.JEQ : self.jeq,
+            self.JNE : self.jne,
+            self.JMP : self.jmp
         }
         self.reg[self.sp] = 0xF4
         
@@ -148,8 +165,33 @@ class CPU:
         print(f'Reg: {self.reg}')
         self.pc += 3
 
+    def add(self):
+        self.alu("ADD", 0, 0)
+        print(f'RAM: {self.ram}')
+        print(f'Reg: {self.reg}')
+        self.pc += 3
+
     def mod(self):
         self.alu("MOD", 0, 1)
+    
+    def call(self):
+        # self.return_pc = self.pc + 2
+        return_pc = self.pc + 2
+        # print("reg address in CALL:", return_pc)
+        # print("value in reg: ", self.reg[return_pc])
+
+
+        self.reg[self.sp] -= 1
+        top_of_stack = self.reg[self.sp]
+        self.ram[top_of_stack] = return_pc
+
+        subroutine_pc = self.reg[1]
+        self.pc = subroutine_pc
+
+    def ret(self):
+        top_of_stack = self.reg[self.sp]
+        return_pc = self.ram[top_of_stack]
+        self.pc = return_pc
 
     def push(self):
         #self.reg[7] = 104 
@@ -173,5 +215,17 @@ class CPU:
         self.reg[reg_addr] = self.ram[top_stack_val]
         self.reg[self.sp] += 1
         self.pc += 2
+
+    def cmp(self):
+        pass
+
+    def jeq(self):
+        pass
+
+    def jne(self):
+        pass
+
+    def jmp(self):
+        pass
         
         
